@@ -2,6 +2,8 @@ import requests
 import pandas as pd
 import os
 from dotenv import load_dotenv
+from config import ALPHA_VANTAGE_KEY, RAW_DATA_PATH
+# Now replace os.getenv("ALPHA_VANTAGE_KEY") with just ALPHA_VANTAGE_KEY
 
 load_dotenv()  # reads your .env file
 
@@ -11,7 +13,7 @@ def fetch_market_data(symbol="AAPL"):
     symbol = the stock ticker (e.g. "AAPL" for Apple, "MSFT" for Microsoft)
     Returns a cleaned pandas DataFrame and saves it to data/raw/
     """
-    api_key = os.getenv("ALPHA_VANTAGE_KEY")
+    api_key = ALPHA_VANTAGE_KEY
 
     url = "https://www.alphavantage.co/query"
     params = {
@@ -55,3 +57,5 @@ if __name__ == "__main__":
     df = fetch_market_data("AAPL")
     if df is not None:
         print(df.head())  # print first 5 rows
+        
+        
