@@ -11,7 +11,7 @@ FORECAST_DAYS  = 30             # how many days ahead to predict
 RAW_DATA_PATH      = f"data/raw/{SYMBOL}_raw.csv"
 CLEAN_DATA_PATH    = f"data/clean/{SYMBOL}_clean.csv"
 FEATURES_DATA_PATH = f"data/features/{SYMBOL}_features.csv"
-MODEL_PATH         = f"models/prophet_{SYMBOL}.pkl"
+MODEL_PATH         = f"models/prophet_model.pkl"
 
 # ── API Keys ─────────────────────────────────────────────
 ALPHA_VANTAGE_KEY = os.getenv("ALPHA_VANTAGE_KEY")
