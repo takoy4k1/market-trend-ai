@@ -35,9 +35,9 @@ def generate_insight(history_df, forecast_df, anomalies=None):
         trend = analyze_trend(forecast_df)
         insight = (
             f"AAPL stock prices are expected to {trend['direction']} by "
-            f"${trend['change_amount']} ({trend['change_pct']}%) "
+            f"\\${trend['change_amount']} ({trend['change_pct']}%) "
             f"over the forecast period, moving from "
-            f"${trend['first_price']} to ${trend['last_price']}. "
+            f"\\${trend['first_price']} to \\${trend['last_price']}. "
         )
         if trend['direction'] == 'rise':
             insight += "Bullish momentum suggests a favorable buying window may be approaching."

@@ -22,7 +22,7 @@ refresh       = st.sidebar.button("🔄 Refresh Data")
 # ── FETCH DATA FROM API ───────────────────────────────────
 st.cache_data.clear() if refresh else None
 
-@st.cache_data(ttl=3600)  # cache for 1 hour
+@st.cache_data(ttl=3600)
 def get_forecast(days):
     try:
         r = requests.get(f"{API_URL}/forecast?days={days}", timeout=10)
@@ -66,21 +66,26 @@ if history is not None:
         name="Actual Price", line=dict(color="#4f9eff", width=2)
     ))
 
-    # Forecast line (dashed)
+    # Forecast line + confidence band
     if forecast is not None:
         fig.add_trace(go.Scatter(
             x=forecast["date"], y=forecast["predicted_price"],
             name="AI Forecast",
             line=dict(color="#3dffa0", width=2, dash="dash")
         ))
-        # Confidence band
-        fig.add_trace(go.Scatter(
-            x=forecast["date"].tolist() + forecast["date"].tolist()[::-1],
-            y=forecast["upper"].tolist() + forecast["lower"].tolist()[::-1],
-            fill="toself", fillcolor="rgba(61,255,160,0.08)",
-            line=dict(color="rgba(255,255,255,0)"),
-            name="Confidence Range", showlegend=True
-        ))
+
+        # Support both "upper"/"lower" and "upper_bound"/"lower_bound" column names
+        upper_col = "upper" if "upper" in forecast.columns else "upper_bound"
+        lower_col = "lower" if "lower" in forecast.columns else "lower_bound"
+
+        if upper_col in forecast.columns and lower_col in forecast.columns:
+            fig.add_trace(go.Scatter(
+                x=forecast["date"].tolist() + forecast["date"].tolist()[::-1],
+                y=forecast[upper_col].tolist() + forecast[lower_col].tolist()[::-1],
+                fill="toself", fillcolor="rgba(61,255,160,0.08)",
+                line=dict(color="rgba(255,255,255,0)"),
+                name="Confidence Range", showlegend=True
+            ))
 
     fig.update_layout(title="Price History + AI Forecast",
                       xaxis_title="Date", yaxis_title="Price ($)",
@@ -94,22 +99,25 @@ st.subheader("🤖 AI-Generated Insights")
 anomalies = []
 try:
     from scripts.anomaly import detect_anomalies
-    anomalies = detect_anomalies()
+    if history is not None:
+        anomaly_df = detect_anomalies(history)
+        anomalies = anomaly_df.to_dict(orient='records')
 except Exception as e:
     st.warning(f"Anomaly detection error: {str(e)}")
 
-# Now use anomalies for insights
+# Generate insight
 try:
     from scripts.insight_engine import generate_insight
 
     if forecast is not None:
         insight = generate_insight(
+            history,
             forecast.to_dict("records"),
             anomalies
         )
-        st.info(f"💡 {insight}")
+        st.info("💡 " + insight)
     else:
-        st.info("Forecast data not available yet.")
+        st.info("💡 Forecast data not available yet.")
 
 except ImportError:
     st.info("💡 Insight engine not connected yet")
@@ -120,7 +128,6 @@ except Exception as e:
 # ── ANOMALY ALERTS ───────────────────────────────────────
 st.subheader("🚨 Anomaly Alerts")
 
-# `anomalies` is now always defined (worst case: empty list)
 if len(anomalies) > 0:
     for a in anomalies:
         st.warning(
