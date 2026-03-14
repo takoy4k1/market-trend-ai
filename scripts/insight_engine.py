@@ -1,4 +1,7 @@
-from .predict import predict_future
+import sys
+import os
+sys.path.append(os.path.dirname(__file__))
+from predict import predict_future
 
 def analyze_trend(forecast):
     """
@@ -24,50 +27,53 @@ def analyze_trend(forecast):
     }
 
 
-def generate_insight(forecast, anomalies=None):
-    """
-    Takes forecast data and returns an AI-written insight string.
-    Uses HuggingFace free text generation — no API key needed.
-    Falls back to a template insight if API fails.
-    """
-    trend = analyze_trend(forecast)
+def generate_insight(history_df, forecast_df, anomalies=None):
+    try:
+        if forecast_df is None or len(forecast_df) == 0:
+            return "Forecast data unavailable — please refresh and try again."
+        
+        trend = analyze_trend(forecast_df)
+        insight = (
+            f"AAPL stock prices are expected to {trend['direction']} by "
+            f"${trend['change_amount']} ({trend['change_pct']}%) "
+            f"over the forecast period, moving from "
+            f"${trend['first_price']} to ${trend['last_price']}. "
+        )
+        if trend['direction'] == 'rise':
+            insight += "Bullish momentum suggests a favorable buying window may be approaching."
+        else:
+            insight += "Bearish signals suggest caution for short-term investors."
 
-    # Build insight using template (reliable, no API needed)
-    insight = (
-        f"AAPL stock prices are expected to {trend['direction']} by "
-        f"${trend['change_amount']} ({trend['change_pct']}%) "
-        f"over the next 30 days, moving from "
-        f"${trend['first_price']} to ${trend['last_price']}. "
-    )
+        if anomalies is not None and len(anomalies) > 0:
+            insight += f" Note: {len(anomalies)} unusual price movement(s) were detected in recent data."
 
-    if trend['direction'] == 'rise':
-        insight += "Bullish momentum suggests a favorable buying window may be approaching."
-    else:
-        insight += "Bearish signals suggest caution for short-term investors."
+        return insight
 
-    # Add anomaly info if provided
-    if anomalies and len(anomalies) > 0:
-        insight += f" Note: {len(anomalies)} unusual price movement(s) were detected in recent data."
-
-    return insight
+    except Exception as e:
+        return f"Market insight temporarily unavailable. Please try refreshing."
 
 
 # Test it when you run this file directly
 if __name__ == '__main__':
+    import pandas as pd
     from anomaly import detect_anomalies
     
+    print("Loading history data...")
+    history_df = pd.read_csv('../data/clean/AAPL_clean.csv')
+
     print("Generating forecast...")
-    forecast = predict_future(30)
-    
+    forecast_list = predict_future(30)
+    forecast_df = pd.DataFrame(forecast_list)
+
     print("Detecting anomalies...")
-    anomalies = detect_anomalies()
-    
-    print("\nGenerating insight...")
-    insight = generate_insight(forecast, anomalies)
-    
+    anomalies = detect_anomalies(history_df)
+
+    print("Generating insight...")
+    insight = generate_insight(history_df, forecast_df, anomalies)
+
     print("\n📊 AI Insight:")
     print(insight)
-    
+
     print(f"\n🚨 Anomalies found: {len(anomalies)}")
-    for a in anomalies:
-        print(f"  {a['date']} — ${a['close_price']} ({a['deviation_pct']}% deviation)")
+    for _, row in anomalies.iterrows():
+        print(f"  {row['date']} — ${row['close_price']} ({row['deviation_pct']}% deviation)")
