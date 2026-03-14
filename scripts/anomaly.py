@@ -2,7 +2,7 @@ import os
 import pandas as pd
 from scipy import stats
 
-def detect_anomalies(threshold=2.5):
+def detect_anomalies(threshold=2.0):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     csv_path = os.path.join(base_dir, '..', 'data', 'clean', 'AAPL_clean.csv')
 
