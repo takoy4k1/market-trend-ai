@@ -1,4 +1,4 @@
-from predict import predict_future
+from .predict import predict_future
 
 def analyze_trend(forecast):
     """

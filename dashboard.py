@@ -87,26 +87,44 @@ if history is not None:
                       height=450, hovermode="x unified")
     st.plotly_chart(fig, use_container_width=True)
 
-# ── AI INSIGHTS (from Person B's insight_engine.py) ───────
+# ── AI INSIGHTS & ANOMALIES ──────────────────────────────
 st.subheader("🤖 AI-Generated Insights")
-try:
-    from scripts.insight_engine import generate_insight
-    insight = generate_insight(history, forecast)
-    st.info(f"💡 {insight}")
-except ImportError:
-    st.info("💡 Insight engine not connected yet — will appear here once Person B's insight_engine.py is ready")
-except Exception as e:
-    st.info(f"💡 Error generating insight: {str(e)}")
 
-# ── ANOMALY ALERTS (from Person B's anomaly.py) ──────────
-st.subheader("🚨 Anomaly Alerts")
+# Detect anomalies ONCE, outside any try block
+anomalies = []
 try:
     from scripts.anomaly import detect_anomalies
-    anomalies = detect_anomalies(history)
-    if len(anomalies) > 0:
-        for _, row in anomalies.iterrows():
-            st.warning(f"⚠️ Unusual activity on {row['date']}: price was ${row['close_price']:.2f}")
+    anomalies = detect_anomalies()
+except Exception as e:
+    st.warning(f"Anomaly detection error: {str(e)}")
+
+# Now use anomalies for insights
+try:
+    from scripts.insight_engine import generate_insight
+
+    if forecast is not None:
+        insight = generate_insight(
+            forecast.to_dict("records"),
+            anomalies
+        )
+        st.info(f"💡 {insight}")
     else:
-        st.success("✅ No anomalies detected in the selected period")
-except:
-    st.warning("Anomaly module not connected yet")
+        st.info("Forecast data not available yet.")
+
+except ImportError:
+    st.info("💡 Insight engine not connected yet")
+except Exception as e:
+    st.warning(f"Insight engine error: {str(e)}")
+
+
+# ── ANOMALY ALERTS ───────────────────────────────────────
+st.subheader("🚨 Anomaly Alerts")
+
+# `anomalies` is now always defined (worst case: empty list)
+if len(anomalies) > 0:
+    for a in anomalies:
+        st.warning(
+            f"⚠️ {a['date']} — Price ${a['close_price']} ({a['deviation_pct']}% deviation)"
+        )
+else:
+    st.success("✅ No anomalies detected")
