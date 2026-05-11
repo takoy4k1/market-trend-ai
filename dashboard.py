@@ -20,7 +20,8 @@ history_days  = st.sidebar.slider("Days of history to show", 30, 365, 90)
 refresh       = st.sidebar.button("🔄 Refresh Data")
 
 # ── FETCH DATA FROM API ───────────────────────────────────
-st.cache_data.clear() if refresh else None
+if refresh:
+    st.cache_data.clear()
 
 @st.cache_data(ttl=3600)
 def get_forecast(days):

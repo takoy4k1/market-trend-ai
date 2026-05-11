@@ -38,7 +38,7 @@ def clean_market_data(symbol="AAPL"):
     missing = df.isnull().sum().sum()
     if missing > 0:
         print(f"Filling {missing} missing values...")
-        df["close_price"] = df["close_price"].ffill()
+        df = df.ffill().bfill()
 
     # ── STEP 6: Keep only needed columns ──────────────────────
     df = df[[
